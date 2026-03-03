@@ -103,7 +103,9 @@ app.delete("/participants", async (req, res) => {
     }
 });
 console.log(process.env.MONGO_URI);
+PORT=process,env.PORT || 5000;
 
-app.listen(5000,"0.0.0.0", () => {
+app.listen(PORT, () => {
     console.log("Server running on port 5000");
+
 });
