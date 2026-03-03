@@ -9,7 +9,7 @@ form.addEventListener("submit", async (e) => {
     const phone = document.getElementById("phone").value;
     const type = document.getElementById("type").value;
 
-    const response = await fetch("https://freshers-project.onrender.com:5000/register", {
+    const response = await fetch("https://freshers-project.onrender.com/register", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -19,4 +19,5 @@ form.addEventListener("submit", async (e) => {
 
     const data = await response.json();
     alert("Registration Successfully")
+
 });
