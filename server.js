@@ -1,18 +1,20 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const cors=require("cors");
-const { message } = require("statuses");
-const app = express();//first you create app
-app.use(cors());//then use middleware without this the browser will fail to connect one port to another port
+const cors = require("cors");
+const app = express();
+
+// Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
+// Database Connection
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB Connected"))
-.catch(err => console.log(err));
-//creating a model
-//schema 
+.catch(err => console.error("MongoDB Connection Error:", err));
+
+// Schema Definition
 const participantSchema = new mongoose.Schema({
     name: String,
     roll: String,
@@ -22,51 +24,63 @@ const participantSchema = new mongoose.Schema({
 });
 
 const Participant = mongoose.model("Participant", participantSchema);
-//post API (save data)
-app.post("/register", async (req, res) => {
-    const newParticipant = new Participant(req.body);
-    await newParticipant.save();
-    res.json({ message: "Registration Successful" });
+
+// --- API Routes ---
+
+// Default Route
+app.get("/", (req, res) => {
+    res.send("Server is running successfully");
 });
 
-// GET API (Fetch all data)
-app.get("/",(req,res)=>{
-    res.send("server is running successfully")
-})
+// Post API (Save data)
+app.post("/register", async (req, res) => {
+    try {
+        const newParticipant = new Participant(req.body);
+        await newParticipant.save();
+        res.json({ message: "Registration Successful" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get API (Fetch all data)
 app.get("/participants", async (req, res) => {
-    const participants = await Participant.find();
-    res.json(participants);
-})
+    try {
+        const participants = await Participant.find();
+        res.json(participants);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
-//delete user
-app.get("/participants/roll/:roll", async(req,res)=>{
-        try{
-            const roll=req.params.roll.trim();
-            const student=await Participant.findOne({roll:roll});
-            if(!student){
-                return res.status(404).json({message:"student not found"});
-            }
-            res.json(student)
-        }catch(error){
-            res.status(500).json({error: error.message});
-        }   
-    });
+// Search user by Roll Number
+app.get("/participants/roll/:roll", async (req, res) => {
+    try {
+        const roll = req.params.roll.trim();
+        const student = await Participant.findOne({ roll: roll });
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+        res.json(student);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
-//it is used for delete participator in database
+// Delete specific user
 app.delete("/participants/:id", async (req, res) => {
     try {
         const deletedUser = await Participant.findByIdAndDelete(req.params.id);
-
         if (!deletedUser) {
             return res.status(404).json({ message: "Student not found" });
         }
-
         res.json({ message: "Deleted successfully" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
-//update the user details
+
+// Update user details
 app.put("/participants/:id", async (req, res) => {
     try {
         const updatedUser = await Participant.findByIdAndUpdate(
@@ -74,17 +88,16 @@ app.put("/participants/:id", async (req, res) => {
             req.body,
             { new: true }
         );
-
         if (!updatedUser) {
             return res.status(404).json({ message: "Student not found" });
         }
-
         res.json({ message: "Updated successfully" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
-//to count the how many nmembers in table
+
+// Count participants
 app.get("/participants/count", async (req, res) => {
     try {
         const total = await Participant.countDocuments();
@@ -93,7 +106,8 @@ app.get("/participants/count", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-//delete all data in table
+
+// Delete ALL data
 app.delete("/participants", async (req, res) => {
     try {
         await Participant.deleteMany({});
@@ -102,10 +116,14 @@ app.delete("/participants", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-console.log(process.env.MONGO_URI);
-PORT=process,env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log("Server running on port 5000");
+// --- Server Startup ---
 
+// FIX 1: Use a constant and fix the typo (comma to dot)
+const PORT = process.env.PORT || 5000;
+
+// FIX 2: Listen on 0.0.0.0 for Render deployment
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server is running on port ${PORT}`);
 });
+
